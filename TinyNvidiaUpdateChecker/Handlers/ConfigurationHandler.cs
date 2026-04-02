@@ -222,9 +222,9 @@ namespace TinyNvidiaUpdateChecker.Handlers
             return result.Tag.ToString();
         }
 
-        public static bool ReadSettingBool(string key)
+        public static bool ReadSettingBool(string key, dynamic data = null, bool setupIfNotFound = true)
         {
-            string value = ReadSetting(key);
+            string value = ReadSetting(key, data, setupIfNotFound);
 
             if (value == "true") {
                 return true;
