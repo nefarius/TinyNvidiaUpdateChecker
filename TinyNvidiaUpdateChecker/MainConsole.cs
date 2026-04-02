@@ -270,9 +270,7 @@ namespace TinyNvidiaUpdateChecker
 
                     if (gpu == null)
                     {
-                        Write("ERROR!");
-                        WriteLine();
-                        WriteLine("No NVIDIA GPU was detected on this system. TNUC can not continue.");
+                        WriteLine("TNUC can not continue.");
                         callExit(1);
                     }
 

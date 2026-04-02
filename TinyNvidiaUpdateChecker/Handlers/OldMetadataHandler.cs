@@ -231,7 +231,7 @@ namespace TinyNvidiaUpdateChecker.Handlers
                     }
                     else
                     {
-                        // check the other type, perhaps it is an eGPU?
+                        // Invert isNotebook switch, perhaps it is an eGPU?
                         (success, gpuId) = OldMetadataHandler.GetGpuIdFromName(gpu.name, !gpu.isNotebook);
 
                         if (success)
@@ -297,12 +297,13 @@ namespace TinyNvidiaUpdateChecker.Handlers
                 if (!gpuList.Any(x => x.vendorId == "10de"))
                 {
                     MainConsole.WriteLine("No NVIDIA GPU was detected on this system.");
+                    MainConsole.WriteLine();
                 }
                 else
                 {
                     MainConsole.WriteLine("GPU metadata lookup using OldMetadataHandler failed!");
-                    MainConsole.WriteLine("Debug information:");
                     MainConsole.WriteLine();
+                    MainConsole.WriteLine("Found GPUs:");
 
                     foreach (GPU gpu in gpuList)
                     {
