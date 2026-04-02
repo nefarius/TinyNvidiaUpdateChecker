@@ -293,16 +293,24 @@ namespace TinyNvidiaUpdateChecker.Handlers
             {
                 MainConsole.Write("ERROR!");
                 MainConsole.WriteLine();
-                MainConsole.WriteLine("GPU metadata lookup using OldMetadataHandler failed!");
-                MainConsole.WriteLine("Debug information:");
-                MainConsole.WriteLine();
 
-                foreach (GPU gpu in gpuList)
+                if (!gpuList.Any(x => x.vendorId == "10de"))
                 {
-                    MainConsole.WriteLine($"GPU Name: '{gpu.name}' | VendorId: {gpu.vendorId} | DeviceId: {gpu.deviceId} | IsNotebook: {gpu.isNotebook}");
+                    MainConsole.WriteLine("No NVIDIA GPU was detected on this system.");
                 }
+                else
+                {
+                    MainConsole.WriteLine("GPU metadata lookup using OldMetadataHandler failed!");
+                    MainConsole.WriteLine("Debug information:");
+                    MainConsole.WriteLine();
 
-                MainConsole.WriteLine();
+                    foreach (GPU gpu in gpuList)
+                    {
+                        MainConsole.WriteLine($"GPU Name: '{gpu.name}' | VendorId: {gpu.vendorId} | DeviceId: {gpu.deviceId} | IsNotebook: {gpu.isNotebook}");
+                    }
+
+                    MainConsole.WriteLine();
+                }
 
                 // Return success false state
                 // This will fall back to NewMetadataHandler

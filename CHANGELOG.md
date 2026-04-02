@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 - DCH upgrade being broken since .NET 7 migration
 - Compatibility with WinRAR versions under v7
+- Potential crash if no GPU is found (Author @rhtenhove)
 
 ### Removed
 - PCI Lookup API for GPU names

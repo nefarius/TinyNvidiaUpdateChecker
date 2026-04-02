@@ -267,6 +267,15 @@ namespace TinyNvidiaUpdateChecker
                     Write("Now loading NewMetadataHandler. . . ");
                     // OldMetadataHandler failed lookup, revert to NewMetadataHandler
                     (gpu, osId, bool success2) = OldMetadataHandler.GetDriverMetadata(false, true);
+
+                    if (gpu == null)
+                    {
+                        Write("ERROR!");
+                        WriteLine();
+                        WriteLine("No NVIDIA GPU was detected on this system. TNUC can not continue.");
+                        callExit(1);
+                    }
+
                     (metadata, string error) = NewMetadataHandler.GetDriverMetadata(gpu.deviceId, driverType);
 
                     if (metadata == null)
