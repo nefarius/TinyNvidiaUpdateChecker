@@ -192,7 +192,7 @@ namespace TinyNvidiaUpdateChecker.Handlers
                 if (pnp.Contains("&DEV_"))
                 {
                     string[] split = pnp.Split("&DEV_");
-                    string vendorID = split[0][^4..];
+                    string vendorID = split[0][^4..].ToLower();
                     string deviceID = split[1][..4];
 
                     // Are drivers installed for this GPU? If not Windows reports a generic GPU name which is not sufficient
@@ -207,7 +207,7 @@ namespace TinyNvidiaUpdateChecker.Handlers
                     }
                     else if (vendorID == "10de" && experimental)
                     {
-                        gpuList.Add(new GPU(rawName, rawVersion, vendorID, deviceID, true, isNotebook, isDchDriver));
+                        gpuList.Add(new GPU(rawName, "000.00", vendorID, deviceID, true, isNotebook, isDchDriver));
                         // Name does not match but the vendor is NVIDIA, use API to lookup its name
                     }
                     else if (vendorID == "10de" && !experimental)
