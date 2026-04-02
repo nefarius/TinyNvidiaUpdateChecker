@@ -4,15 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## [1.24.0] - 2026-04-02
+Happy easter! Jesus is risen
+
 ### Fixed
-- Crash when no GPU driver was found
+- Crash when no GPU driver was found, after running DDU
 - Edge case crash if no GPU is found (Author @rhtenhove)
-- DCH upgrade being broken since .NET 7 migration
+- DCH upgrade being broken since .NET 7 migration, and NVIDIA no longer creating registry key
 - Compatibility with WinRAR versions under v7
 
 ### Removed
-- PCI Lookup API for GPU names
+- Old PCI Lookup API for GPU names, which probably never worked
 
 ## [1.23.0] - 2026-02-23
 ### Changed
