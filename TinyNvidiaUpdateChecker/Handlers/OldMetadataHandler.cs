@@ -173,6 +173,9 @@ namespace TinyNvidiaUpdateChecker.Handlers
 
             // Check for DCH for newer drivers
             // TODO do we know if this applies to every GPU?
+            // UPDATE as of 2026-04-02, NVIDIA no longer creates this registry entry
+            // Meaning this check is broken for newer Windows installations
+            // OldMetadataHandler relies on the automatic DCH upgrade
             using (var regKey = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\nvlddmkm", false))
             {
                 if (regKey != null && regKey.GetValue("DCHUVen") != null)
