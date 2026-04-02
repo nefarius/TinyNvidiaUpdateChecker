@@ -202,17 +202,16 @@ namespace TinyNvidiaUpdateChecker.Handlers
                         string cleanVersion = rawVersion.Substring(rawVersion.Length - 5, 5).Insert(3, ".");
 
                         gpuList.Add(new GPU(gpuName, cleanVersion, vendorID, deviceID, true, isNotebook, isDchDriver));
-
-                        // If experimental mode is enabled, and the vendor is correct, then it's OK to use
                     }
-                    else if (vendorID == "10de" && experimental)
-                    {
-                        gpuList.Add(new GPU(rawName, "000.00", vendorID, deviceID, true, isNotebook, isDchDriver));
-                        // Name does not match but the vendor is NVIDIA, use API to lookup its name
-                    }
+                    // Name does not match but the vendor is NVIDIA, revert to NewMetadataHandler
                     else if (vendorID == "10de" && !experimental)
                     {
-                        gpuList.Add(new GPU(rawName, rawVersion, vendorID, deviceID, false, isNotebook, isDchDriver));
+                        gpuList.Add(new GPU(rawName, rawVersion, vendorID, deviceID, false, isNotebook, isDchDriver, int.Parse(deviceID)));
+                    }
+                    // If experimental mode is enabled, and the vendor is correct, then it's OK to use
+                    else if (vendorID == "10de" && experimental)
+                    {
+                        gpuList.Add(new GPU(rawName, "000.00", vendorID, deviceID, true, isNotebook, isDchDriver, int.Parse(deviceID)));
                     }
                 }
             }

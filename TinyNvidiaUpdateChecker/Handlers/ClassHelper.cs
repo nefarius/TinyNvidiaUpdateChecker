@@ -9,13 +9,13 @@ public class OSClass
     public int id { get; set; }
 }
 
-public class GPU(string name, string version, string vendorId, string deviceId, bool isValidated, bool isNotebook, bool isDch)
+public class GPU(string name, string version, string vendorId, string deviceId, bool isValidated, bool isNotebook, bool isDch, int id = 0)
 {
     public string name { get; set; } = name;
     public string version { get; set; } = version;
     public string vendorId { get; set; } = vendorId;
     public string deviceId { get; set; } = deviceId;
-    public int id { get; set; } = 0;
+    public int id { get; set; } = id;
     public bool isValidated { get; set; } = isValidated;
     public bool isNotebook { get; set; } = isNotebook;
     public bool isDch { get; set; } = isDch;
