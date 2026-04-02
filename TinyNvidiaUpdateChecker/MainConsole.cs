@@ -466,7 +466,7 @@ namespace TinyNvidiaUpdateChecker
 
                 JObject nvResponse = JObject.Parse(ReadURL(ajaxDriverURL));
 
-                // Check if driver was found
+                // GPU driver was found
                 if ((int)nvResponse["Success"] == 1) {
 
                     // If the operating system has support for DCH drivers, and DCH drivers are currently not installed, then serach for DCH drivers, too.
@@ -481,6 +481,18 @@ namespace TinyNvidiaUpdateChecker
                     }
 
                     return (JObject)nvResponse["IDS"][0]["downloadInfo"];
+
+                // No GPU driver was found, and we are not identified as DCH
+                // Auto-upgrade to DCH and search for drivers again
+                } else if ((int)nvResponse["Success"] == 0 && Environment.OSVersion.Version.Build > 10240 && !isDchDriver) {
+                    ajaxDriverURL = ajaxDriverURL[..^1] + "1";
+                    JObject nvResponseDCH = JObject.Parse(ReadURL(ajaxDriverURL));
+
+                    if ((int)nvResponseDCH["Success"] == 1) {
+                        return (JObject)nvResponseDCH["IDS"][0]["downloadInfo"];
+                    }
+
+                    throw new ArgumentOutOfRangeException();
                 } else {
                     throw new ArgumentOutOfRangeException();
                 }

@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.24.2] - 2026-04-02
+### Fixed
+- Auto-upgrade non-DCH identified systems to DCH drivers, if no drivers were found
+
 ## [1.24.1] - 2026-04-02
 ### Fixed
 - 'Use Experimental Metadata' not found error
