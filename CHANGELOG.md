@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Fixed
+- DCH upgrade being broken since .NET 7 migration
 - Compatibility with WinRAR versions under v7
 
 ### Removed

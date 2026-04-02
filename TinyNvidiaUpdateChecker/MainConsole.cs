@@ -41,6 +41,11 @@ namespace TinyNvidiaUpdateChecker
         public readonly static string updateUrl = "https://api.github.com/repos/ElPumpo/TinyNvidiaUpdateChecker/releases/latest";
 
         /// <summary>
+        /// URL for NVIDIA Ajax API
+        /// </summary>
+        public readonly static string nvidiaAjaxURL = "https://gfwsl.geforce.com/services_toolkit/services/com/nvidia/services/AjaxDriverService.php?func=DriverManualLookup";
+
+        /// <summary>
         /// Current client version
         /// </summary>
         public static string offlineVer = Application.ProductVersion;
@@ -442,32 +447,33 @@ namespace TinyNvidiaUpdateChecker
         }
 
         private static JObject GetDriverDownloadInfo(int gpuId, int osId, bool isDchDriver, string driverType) {
+            isDchDriver = false;
             try {
-                var ajaxDriverLink = "https://gfwsl.geforce.com/services_toolkit/services/com/nvidia/services/AjaxDriverService.php?func=DriverManualLookup";
-                ajaxDriverLink += $"&pfid={gpuId}&osID={osId}&dch={(isDchDriver ? 1 : 0)}";
                 // Driver type (upCRD)
                 // - 0 is Game Ready Driver (GRD)
                 // - 1 is Studio Driver (SD)
                 int driverTypeInt = driverType == "grd" ? 0 : 1;
-                ajaxDriverLink += $"&upCRD={driverTypeInt}";
 
-                JObject driverObj = JObject.Parse(ReadURL(ajaxDriverLink));
+                string ajaxDriverURL = nvidiaAjaxURL;
+                ajaxDriverURL += $"&pfid={gpuId}&osID={osId}&upCRD={driverTypeInt}&dch={(isDchDriver ? 1 : 0)}";
+
+                JObject nvResponse = JObject.Parse(ReadURL(ajaxDriverURL));
 
                 // Check if driver was found
-                if ((int)driverObj["Success"] == 1) {
+                if ((int)nvResponse["Success"] == 1) {
 
-                    // If the operating system has support for DCH drivers, and DCH drivers are currently not installed, then serach for DCH drivers too.
+                    // If the operating system has support for DCH drivers, and DCH drivers are currently not installed, then serach for DCH drivers, too.
                     // Non-DCH drivers are discontinued. Not searching for DCH drivers will result in users having outdated graphics drivers, and we don't want that.
-                    if (Environment.Version.Build > 10240 && !isDchDriver) {
-                        ajaxDriverLink = ajaxDriverLink[..^1] + "1";
-                        JObject driverObjDCH = JObject.Parse(ReadURL(ajaxDriverLink));
+                    if (Environment.OSVersion.Version.Build > 10240 && !isDchDriver) {
+                        ajaxDriverURL = ajaxDriverURL[..^1] + "1";
+                        JObject nvResponseDCH = JObject.Parse(ReadURL(ajaxDriverURL));
 
-                        if ((int)driverObjDCH["Success"] == 1) {
-                            return (JObject)driverObjDCH["IDS"][0]["downloadInfo"];
+                        if ((int)nvResponseDCH["Success"] == 1) {
+                            return (JObject)nvResponseDCH["IDS"][0]["downloadInfo"];
                         }
                     }
 
-                    return (JObject)driverObj["IDS"][0]["downloadInfo"];
+                    return (JObject)nvResponse["IDS"][0]["downloadInfo"];
                 } else {
                     throw new ArgumentOutOfRangeException();
                 }
