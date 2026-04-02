@@ -176,9 +176,9 @@ namespace TinyNvidiaUpdateChecker
             GPU gpu;
             int osId;
             string driverType = ConfigurationHandler.ReadSetting("Driver type");
-            bool useExperimental = ConfigurationHandler.ReadSettingBool("Use Experimental Metadata", null, false);
+            string useExperimental = ConfigurationHandler.ReadSetting("Use Experimental Metadata", null, false);
 
-            if (useExperimental) {
+            if (useExperimental == "true") {
                 (gpu, osId, bool success) = OldMetadataHandler.GetDriverMetadata(false, true);
                 (metadata, string error) = NewMetadataHandler.GetDriverMetadata(gpu.deviceId, driverType);
 
