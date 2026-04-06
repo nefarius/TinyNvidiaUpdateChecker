@@ -103,7 +103,7 @@ namespace TinyNvidiaUpdateChecker.Handlers
         /// <summary>
         /// Finds the GPU, the version and queries up to date information
         /// </summary>
-        public static (GPU, int, bool) GetDriverMetadata(bool forceRecache = false, bool experimental = false)
+        public static (GPU, int, bool) GetDriverMetadata(bool forceRecache = false, bool useNewMetadataHandler = false)
         {
             bool isNotebook = false;
             bool isDchDriver = false; // TODO rewrite for each GPU
@@ -112,7 +112,7 @@ namespace TinyNvidiaUpdateChecker.Handlers
             List<GPU> gpuList = [];
             int osId = 0;
 
-            if (!experimental)
+            if (!useNewMetadataHandler)
             {
                 // Check for notebook
                 // TODO rewrite and identify GPUs properly
@@ -207,24 +207,24 @@ namespace TinyNvidiaUpdateChecker.Handlers
                         gpuList.Add(new GPU(gpuName, cleanVersion, vendorID, deviceID, true, isNotebook, isDchDriver));
                     }
                     // Name does not match but the vendor is NVIDIA, revert to NewMetadataHandler
-                    else if (vendorID == "10de" && !experimental)
+                    else if (vendorID == "10de" && !useNewMetadataHandler)
                     {
                         gpuList.Add(new GPU(rawName, rawVersion, vendorID, deviceID, false, isNotebook, isDchDriver, int.Parse(deviceID)));
                     }
-                    // If experimental mode is enabled, and the vendor is correct, then it's OK to use
-                    else if (vendorID == "10de" && experimental)
+                    // If NewMetadataHandler mode is enabled, and the vendor is correct, then it's OK to use
+                    else if (vendorID == "10de" && useNewMetadataHandler)
                     {
                         gpuList.Add(new GPU(rawName, "000.00", vendorID, deviceID, true, isNotebook, isDchDriver, int.Parse(deviceID)));
                     }
                 }
             }
 
-            // If experimental mode is enabled, do NOT use OldMetadataHandler. Instead, NewMetadataHandler is used, and
-            // don't set any GPU as invalid, because it will not pass the code below.
-            if (!experimental)
+            // If NewMetadataHandler mode is enabled, then skip ZenitH-AT GetGpuIdFromName code
+            if (!useNewMetadataHandler)
             {
                 foreach (GPU gpu in gpuList.Where(x => x.isValidated))
                 {
+                    // Uses ZenitH-AT's nvidia-data repo
                     (bool success, int gpuId) = OldMetadataHandler.GetGpuIdFromName(gpu.name, gpu.isNotebook);
 
                     if (success)
@@ -251,13 +251,18 @@ namespace TinyNvidiaUpdateChecker.Handlers
 
             int gpuCount = gpuList.Where(x => x.isValidated).Count();
 
+            // Was any validated GPU found?
             if (gpuCount > 0)
             {
+
+                // More than one valid GPU was found, prompt user to choose the proper GPU
                 if (gpuCount > 1)
                 {
-                    // Validate that the GPU ID is still active on this system
+                    
+                    // Retrieve GPU ID from config, or prompts user to choose, if config is not found
                     int configGpuId = int.Parse(ConfigurationHandler.ReadSetting("GPU ID", gpuList));
 
+                    // Validate that the GPU ID is still active on this system
                     foreach (GPU gpu in gpuList.Where(x => x.isValidated))
                     {
                         if (gpu.id == configGpuId)
@@ -279,6 +284,7 @@ namespace TinyNvidiaUpdateChecker.Handlers
                 }
                 else
                 {
+                    // Only one GPU was found on the system
                     GPU gpu = gpuList.Where(x => x.isValidated).First();
                     return (gpu, osId, true);
                 }
@@ -286,7 +292,7 @@ namespace TinyNvidiaUpdateChecker.Handlers
 
             // If no GPU could be validated, then force recaching of OldMetadataHandler once, and loop again.
             // This fixes issues related with outdated cache
-            if (!forceRecache & !experimental)
+            if (!forceRecache & !useNewMetadataHandler)
             {
                 OldMetadataHandler.PrepareCache(true);
                 return GetDriverMetadata(true);
