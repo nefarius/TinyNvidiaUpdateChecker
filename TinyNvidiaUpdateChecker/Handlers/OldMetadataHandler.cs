@@ -89,7 +89,7 @@ namespace TinyNvidiaUpdateChecker.Handlers
             }
 
             // Download the file and cache it
-            string rawData = MainConsole.ReadURL($"{MainConsole.gpuMetadataRepo}/{fileName}");
+            string rawData = MainConsole.SendGetRequest($"{MainConsole.gpuMetadataRepo}/{fileName}");
 
             try {
                 File.AppendAllText(dataPath, rawData);

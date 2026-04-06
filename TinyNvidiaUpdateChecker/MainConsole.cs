@@ -461,10 +461,16 @@ namespace TinyNvidiaUpdateChecker
                 // - 1 is Studio Driver (SD)
                 int driverTypeInt = driverType == "grd" ? 0 : 1;
 
-                string ajaxDriverURL = nvidiaAjaxURL;
-                ajaxDriverURL += $"&pfid={gpuId}&osID={osId}&upCRD={driverTypeInt}&dch={(isDchDriver ? 1 : 0)}";
+                // DCH driver
+                int dchDriverInt = isDchDriver ? 1 : 0;
 
-                JObject nvResponse = JObject.Parse(ReadURL(ajaxDriverURL));
+                // Constructs the driver URL
+                // Note: the last character is the DCH switch, and used for auto-upgrade
+                string ajaxDriverURL = nvidiaAjaxURL;
+                ajaxDriverURL += $"&pfid={gpuId}&osID={osId}&upCRD={driverTypeInt}&dch={dchDriverInt}";
+
+                // Sends a GET request, and parses the response into JObject
+                JObject nvResponse = JObject.Parse(SendGetRequest(ajaxDriverURL));
 
                 // GPU driver was found
                 if ((int)nvResponse["Success"] == 1) {
@@ -473,7 +479,7 @@ namespace TinyNvidiaUpdateChecker
                     // Non-DCH drivers are discontinued. Not searching for DCH drivers will result in users having outdated graphics drivers, and we don't want that.
                     if (Environment.OSVersion.Version.Build > 10240 && !isDchDriver) {
                         ajaxDriverURL = ajaxDriverURL[..^1] + "1";
-                        JObject nvResponseDCH = JObject.Parse(ReadURL(ajaxDriverURL));
+                        JObject nvResponseDCH = JObject.Parse(SendGetRequest(ajaxDriverURL));
 
                         if ((int)nvResponseDCH["Success"] == 1) {
                             return (JObject)nvResponseDCH["IDS"][0]["downloadInfo"];
@@ -486,12 +492,16 @@ namespace TinyNvidiaUpdateChecker
                 // Auto-upgrade to DCH and search for drivers again
                 } else if ((int)nvResponse["Success"] == 0 && Environment.OSVersion.Version.Build > 10240 && !isDchDriver) {
                     ajaxDriverURL = ajaxDriverURL[..^1] + "1";
-                    JObject nvResponseDCH = JObject.Parse(ReadURL(ajaxDriverURL));
+                    JObject nvResponseDCH = JObject.Parse(SendGetRequest(ajaxDriverURL));
 
+                    // Auto-upgrade DCH was successful
                     if ((int)nvResponseDCH["Success"] == 1) {
                         return (JObject)nvResponseDCH["IDS"][0]["downloadInfo"];
                     }
 
+                    // Auto-upgrade DCH failed, meaning no DCH or non-DCH driver found.
+                    // If the current driverType is SD, TNUC will prompt to chance to GRD
+                    // TODO: don't require restart for changes to apply
                     throw new ArgumentOutOfRangeException();
                 } else {
                     throw new ArgumentOutOfRangeException();
@@ -542,7 +552,7 @@ namespace TinyNvidiaUpdateChecker
             return null;
         }
 
-        public static string ReadURL(string url)
+        public static string SendGetRequest(string url)
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
             using var response = httpClient.Send(request);

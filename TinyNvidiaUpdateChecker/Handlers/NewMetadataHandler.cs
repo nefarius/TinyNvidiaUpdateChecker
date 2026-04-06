@@ -41,7 +41,7 @@ public class NewMetadataHandler
     {
         try
         {
-            string jsonString = MainConsole.ReadURL(MainConsole.experimentalGpuMetadataRepo);
+            string jsonString = MainConsole.SendGetRequest(MainConsole.experimentalGpuMetadataRepo);
             _combinedGpuData = JsonSerializer.Deserialize<CombinedGpuData>(jsonString, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             return true;
         }
@@ -162,7 +162,7 @@ public class NewMetadataHandler
         try
         {
             // Parse code
-            string releaseNotes = MainConsole.ReadURL(MainConsole.experimentalGpuMetadataRepoReleaseNotes);
+            string releaseNotes = MainConsole.SendGetRequest(MainConsole.experimentalGpuMetadataRepoReleaseNotes);
             JObject parsed = JObject.Parse(releaseNotes);
             string html = parsed["result"].ToString();
 

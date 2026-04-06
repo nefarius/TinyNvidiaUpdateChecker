@@ -15,7 +15,7 @@ namespace TinyNvidiaUpdateChecker.Handlers
             Console.Write("Searching for Update . . . ");
 
             try {
-                string response = MainConsole.ReadURL(MainConsole.updateUrl);
+                string response = MainConsole.SendGetRequest(MainConsole.updateUrl);
                 GitHubAPIReleaseRoot release = JsonConvert.DeserializeObject<GitHubAPIReleaseRoot>(response);
                 MainConsole.onlineVer = release.tag_name[1..];
 
