@@ -27,6 +27,11 @@ namespace TinyNvidiaUpdateChecker.Handlers
         /// </summary>
         static OSClassRoot cachedOSData;
 
+        /// <summary>
+        /// GPU name lookup powered by PCI Lookup
+        /// </summary>
+        static string PCILookupAPI = "https://www.pcilookup.com/api.php";
+
         public static void PrepareCache(bool forceRecache = false)
         {
             var gpuData = GetCachedMetadata("gpu-data.json", forceRecache);
@@ -49,6 +54,36 @@ namespace TinyNvidiaUpdateChecker.Handlers
             }
         }
 
+        /// <summary>
+        /// Uses PCI Lookup API to get a GPU label
+        /// </summary>
+        /// <returns>Found GPU label</returns>
+        public static string LookupGpuLabel(string vendorID, string deviceID, string rawGpuLabel)
+        {
+            try
+            {
+                Regex apiRegex = new(@"([A-Za-z0-9]+( [A-Za-z0-9]+)+)");
+
+                string url = $"{PCILookupAPI}?action=search&vendor={vendorID}&device={deviceID}";
+                string rawData = MainConsole.SendGetRequest(url);
+                PCILookupClassRoot apiResponse = JsonConvert.DeserializeObject<PCILookupClassRoot>(rawData);
+
+                if (apiResponse != null && apiResponse.Count > 0)
+                {
+                    string rawName = apiResponse[0].desc;
+
+                    if (apiRegex.IsMatch(rawName))
+                    {
+                        string foundLabel = apiRegex.Match(rawName).Value.Trim();
+
+                        return foundLabel;
+                    }
+                }
+            } catch { }
+
+            return rawGpuLabel;
+        }
+
         public static (bool, int) GetGpuIdFromName(string name, bool isNotebook)
         {
             try {
@@ -57,7 +92,6 @@ namespace TinyNvidiaUpdateChecker.Handlers
             } catch {
                 return (false, 0);
             }
-            
         }
         public static OSClassRoot RetrieveOSData() { return cachedOSData; }
 
@@ -187,7 +221,7 @@ namespace TinyNvidiaUpdateChecker.Handlers
             // Scan computer for GPUs
             foreach (ManagementBaseObject gpu in new ManagementObjectSearcher("SELECT Name, DriverVersion, PNPDeviceID FROM Win32_VideoController").Get())
             {
-                string rawName = gpu["Name"].ToString();
+                string rawGpuLabel = gpu["Name"].ToString();
                 string rawVersion = gpu["DriverVersion"].ToString().Replace(".", string.Empty);
                 string pnp = gpu["PNPDeviceID"].ToString();
 
@@ -195,26 +229,37 @@ namespace TinyNvidiaUpdateChecker.Handlers
                 if (pnp.Contains("&DEV_"))
                 {
                     string[] split = pnp.Split("&DEV_");
-                    string vendorID = split[0][^4..].ToLower();
-                    string deviceID = split[1][..4];
+                    string vendorId = split[0][^4..].ToLower();
+                    string deviceId = split[1][..4];
 
                     // Are drivers installed for this GPU? If not Windows reports a generic GPU name which is not sufficient
-                    if (Regex.IsMatch(rawName, @"^NVIDIA") && nameRegex.IsMatch(rawName))
+                    if (Regex.IsMatch(rawGpuLabel, @"^NVIDIA") && nameRegex.IsMatch(rawGpuLabel))
                     {
-                        string gpuName = nameRegex.Match(rawName).Value.Trim().Replace("Super", "SUPER");
+                        string gpuLabel = nameRegex.Match(rawGpuLabel).Value.Trim().Replace("Super", "SUPER");
                         string cleanVersion = rawVersion.Substring(rawVersion.Length - 5, 5).Insert(3, ".");
 
-                        gpuList.Add(new GPU(gpuName, cleanVersion, vendorID, deviceID, true, isNotebook, isDchDriver));
+                        gpuList.Add(new GPU(gpuLabel, cleanVersion, vendorId, deviceId, true, isNotebook, isDchDriver));
                     }
-                    // Name does not match but the vendor is NVIDIA, revert to NewMetadataHandler
-                    else if (vendorID == "10de" && !useNewMetadataHandler)
+
+                    // Name regex does not match, but the vendor is NVIDIA, revert to NewMetadataHandler
+                    else if (vendorId == "10de")
                     {
-                        gpuList.Add(new GPU(rawName, rawVersion, vendorID, deviceID, false, isNotebook, isDchDriver, int.Parse(deviceID)));
-                    }
-                    // If NewMetadataHandler mode is enabled, and the vendor is correct, then it's OK to use
-                    else if (vendorID == "10de" && useNewMetadataHandler)
-                    {
-                        gpuList.Add(new GPU(rawName, "000.00", vendorID, deviceID, true, isNotebook, isDchDriver, int.Parse(deviceID)));
+                        // Use API lookup to find GPU label
+                        // Otherwise, if system has multiple NVIDIA GPUs, the "choose GPU" dialog will show multiple GPUs with the generic driver
+                        string gpuLabel = LookupGpuLabel(vendorId, deviceId, rawGpuLabel);
+
+                        // If NewMetadataHandler mode is enabled, and the vendor is correct, then it's OK to use
+                        // Because we don't rely on regex name match
+                        // By setting the GPU as isValidated, it will appear as a viable GPU in later code
+                        if (useNewMetadataHandler)
+                        {
+                            gpuList.Add(new GPU(gpuLabel, "000.00", vendorId, deviceId, true, isNotebook, isDchDriver, int.Parse(deviceId)));
+
+                        // OldMetadataHandler requires name regex to match
+                        // Reverting to NewMetadataHandler, which doesn't require it
+                        } else {
+                            gpuList.Add(new GPU(gpuLabel, "000.00", vendorId, deviceId, false, isNotebook, isDchDriver, int.Parse(deviceId)));
+                        }
                     }
                 }
             }
@@ -225,7 +270,7 @@ namespace TinyNvidiaUpdateChecker.Handlers
                 foreach (GPU gpu in gpuList.Where(x => x.isValidated))
                 {
                     // Uses ZenitH-AT's nvidia-data repo
-                    (bool success, int gpuId) = OldMetadataHandler.GetGpuIdFromName(gpu.name, gpu.isNotebook);
+                    (bool success, int gpuId) = GetGpuIdFromName(gpu.name, gpu.isNotebook);
 
                     if (success)
                     {
@@ -234,7 +279,7 @@ namespace TinyNvidiaUpdateChecker.Handlers
                     else
                     {
                         // Invert isNotebook switch, perhaps it is an eGPU?
-                        (success, gpuId) = OldMetadataHandler.GetGpuIdFromName(gpu.name, !gpu.isNotebook);
+                        (success, gpuId) = GetGpuIdFromName(gpu.name, !gpu.isNotebook);
 
                         if (success)
                         {
@@ -294,7 +339,7 @@ namespace TinyNvidiaUpdateChecker.Handlers
             // This fixes issues related with outdated cache
             if (!forceRecache & !useNewMetadataHandler)
             {
-                OldMetadataHandler.PrepareCache(true);
+                PrepareCache(true);
                 return GetDriverMetadata(true);
             }
             else
