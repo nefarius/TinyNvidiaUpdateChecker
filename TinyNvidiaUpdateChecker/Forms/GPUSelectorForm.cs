@@ -8,7 +8,7 @@ namespace TinyNvidiaUpdateChecker
     public partial class GPUSelectorForm : Form
     {
         List<GPU> gpuList = null;
-        Dictionary<int, int> validatedList = [];
+        Dictionary<int, string> validatedList = [];
 
         public GPUSelectorForm() => InitializeComponent();
 
@@ -24,7 +24,7 @@ namespace TinyNvidiaUpdateChecker
         {
             foreach (var gpu in gpuList.Where(x => x.isValidated)) {
                 int index = comboBox.Items.Add(gpu.name);
-                validatedList.Add(index, gpu.id);
+                validatedList.Add(index, gpu.deviceId);
             }
         }
 

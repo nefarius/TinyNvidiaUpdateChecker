@@ -84,10 +84,13 @@ namespace TinyNvidiaUpdateChecker.Handlers
             return rawGpuLabel;
         }
 
-        public static (bool, int) GetGpuIdFromName(string name, bool isNotebook)
+        // Uses https://github.com/ZenitH-AT/nvidia-data to map Product Family ID (pfId) from GPU Name
+        // pfId is required when calling NVIDIA Ajax API, as it does not take GPU Device ID
+        // Requires the GPU name to be sanitized as per Zenith-AT's standard
+        public static (bool, int) GetPfIdFromGpuName(string gpuName, bool isNotebook)
         {
             try {
-                int gpuId = (int)cachedGPUData[isNotebook ? "notebook" : "desktop"][name];
+                int gpuId = (int)cachedGPUData[isNotebook ? "notebook" : "desktop"][gpuName];
                 return (true, gpuId);
             } catch {
                 return (false, 0);
@@ -253,12 +256,12 @@ namespace TinyNvidiaUpdateChecker.Handlers
                         // By setting the GPU as isValidated, it will appear as a viable GPU in later code
                         if (useNewMetadataHandler)
                         {
-                            gpuList.Add(new GPU(gpuLabel, "000.00", vendorId, deviceId, true, isNotebook, isDchDriver, int.Parse(deviceId)));
+                            gpuList.Add(new GPU(gpuLabel, "000.00", vendorId, deviceId, true, isNotebook, isDchDriver));
 
                         // OldMetadataHandler requires name regex to match
                         // Reverting to NewMetadataHandler, which doesn't require it
                         } else {
-                            gpuList.Add(new GPU(gpuLabel, "000.00", vendorId, deviceId, false, isNotebook, isDchDriver, int.Parse(deviceId)));
+                            gpuList.Add(new GPU(gpuLabel, "000.00", vendorId, deviceId, false, isNotebook, isDchDriver));
                         }
                     }
                 }
@@ -269,22 +272,22 @@ namespace TinyNvidiaUpdateChecker.Handlers
             {
                 foreach (GPU gpu in gpuList.Where(x => x.isValidated))
                 {
-                    // Uses ZenitH-AT's nvidia-data repo
-                    (bool success, int gpuId) = GetGpuIdFromName(gpu.name, gpu.isNotebook);
+                    // Uses ZenitH-AT's nvidia-data repo to get pfId from GPU name
+                    (bool success, int pfId) = GetPfIdFromGpuName(gpu.name, gpu.isNotebook);
 
                     if (success)
                     {
-                        gpu.id = gpuId;
+                        gpu.pfId = pfId;
                     }
                     else
                     {
                         // Invert isNotebook switch, perhaps it is an eGPU?
-                        (success, gpuId) = GetGpuIdFromName(gpu.name, !gpu.isNotebook);
+                        (success, pfId) = GetPfIdFromGpuName(gpu.name, !gpu.isNotebook);
 
                         if (success)
                         {
                             gpu.isNotebook = !gpu.isNotebook;
-                            gpu.id = gpuId;
+                            gpu.pfId = pfId;
                         }
                         else
                         {
@@ -300,28 +303,28 @@ namespace TinyNvidiaUpdateChecker.Handlers
             if (gpuCount > 0)
             {
 
-                // More than one valid GPU was found, prompt user to choose the proper GPU
+                // More than one valid GPU was found, prompt user to choose the proper GPU mapped by device ID
                 if (gpuCount > 1)
                 {
                     
                     // Retrieve GPU ID from config, or prompts user to choose, if config is not found
-                    int configGpuId = int.Parse(ConfigurationHandler.ReadSetting("GPU ID", gpuList));
+                    string configGpuId = ConfigurationHandler.ReadSetting("GPU ID", gpuList).ToLower();
 
                     // Validate that the GPU ID is still active on this system
                     foreach (GPU gpu in gpuList.Where(x => x.isValidated))
                     {
-                        if (gpu.id == configGpuId)
+                        if (gpu.deviceId.ToLower() == configGpuId)
                         {
                             return (gpu, osId, true);
                         }
                     }
 
                     // GPU ID is no longer active on this system, prompt user to choose new GPU
-                    configGpuId = int.Parse(ConfigurationHandler.SetupSetting("GPU ID", gpuList));
+                    configGpuId = ConfigurationHandler.SetupSetting("GPU ID", gpuList);
 
                     foreach (GPU gpu in gpuList.Where(x => x.isValidated))
                     {
-                        if (gpu.id == configGpuId)
+                        if (gpu.deviceId.ToLower() == configGpuId)
                         {
                             return (gpu, osId, true);
                         }
@@ -330,8 +333,8 @@ namespace TinyNvidiaUpdateChecker.Handlers
                 else
                 {
                     // Only one GPU was found on the system
-                    GPU gpu = gpuList.Where(x => x.isValidated).First();
-                    return (gpu, osId, true);
+                    GPU firstGpu = gpuList.Where(x => x.isValidated).First();
+                    return (firstGpu, osId, true);
                 }
             }
 

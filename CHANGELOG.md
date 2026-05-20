@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - PCI Lookup API for unidentified GPUs, so 'Choose GPU' dialog for multi-GPU setups don't show "Generic Driver" texts
 
+### Fixed
+- Crash if GPU has a letter in its device ID (such as RTX 2070 SUPER)
+
 ## [1.24.2] - 2026-04-02
 ### Fixed
 - Auto-upgrade non-DCH identified systems to DCH drivers, if no drivers were found

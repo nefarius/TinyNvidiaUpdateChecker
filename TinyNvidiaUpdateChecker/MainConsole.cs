@@ -196,7 +196,7 @@ namespace TinyNvidiaUpdateChecker
                 // If Old was able to lookup GPU data
                 if (success)
                 {
-                    JObject downloadInfo = GetDriverDownloadInfo(gpu.id, osId, gpu.isDch, driverType);
+                    JObject downloadInfo = GetDriverDownloadInfo(gpu.pfId, osId, gpu.isDch, driverType);
                     metadata = new();
 
                     string tempUrl = downloadInfo["DownloadURL"].ToString();
@@ -294,7 +294,7 @@ namespace TinyNvidiaUpdateChecker
             WriteLine();
 
             if (debug) {
-                WriteLine($"gpuId:       {gpu.id}");
+                WriteLine($"pfId:        {gpu.pfId}");
                 WriteLine($"osId:        {osId}");
                 WriteLine($"isDchDriver: {gpu.isDch}");
                 WriteLine($"downloadURL: {metadata.downloadUrl}");
@@ -453,7 +453,7 @@ namespace TinyNvidiaUpdateChecker
             }
         }
 
-        private static JObject GetDriverDownloadInfo(int gpuId, int osId, bool isDchDriver, string driverType) {
+        private static JObject GetDriverDownloadInfo(int pfId, int osId, bool isDchDriver, string driverType) {
             isDchDriver = false;
             try {
                 // Driver type (upCRD)
@@ -467,7 +467,7 @@ namespace TinyNvidiaUpdateChecker
                 // Constructs the driver URL
                 // Note: the last character is the DCH switch, and used for auto-upgrade
                 string ajaxDriverURL = nvidiaAjaxURL;
-                ajaxDriverURL += $"&pfid={gpuId}&osID={osId}&upCRD={driverTypeInt}&dch={dchDriverInt}";
+                ajaxDriverURL += $"&pfid={pfId}&osID={osId}&upCRD={driverTypeInt}&dch={dchDriverInt}";
 
                 // Sends a GET request, and parses the response into JObject
                 JObject nvResponse = JObject.Parse(SendGetRequest(ajaxDriverURL));
@@ -512,7 +512,7 @@ namespace TinyNvidiaUpdateChecker
                 WriteLine("No NVIDIA driver was found for your system configuration.");
                 WriteLine();
                 WriteLine("Debugging information:");
-                WriteLine($"gpuId:       {gpuId}");
+                WriteLine($"pfId:        {pfId}");
                 WriteLine($"osId:        {osId}");
                 WriteLine($"isDchDriver: {isDchDriver}");
                 WriteLine($"driverType:  {driverType}");
