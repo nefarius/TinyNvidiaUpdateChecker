@@ -1,33 +1,45 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace TinyNvidiaUpdateChecker
 {
-    public partial class DownloaderForm : Form {
+    public partial class DownloaderForm : Form
+    {
+        private readonly string _downloadURL;
+        private readonly string _savePath;
 
-        public DownloaderForm() => InitializeComponent();
+        public Exception Error { get; private set; }
 
-        public async void DownloadFile(string downloadURL, string savePath)
+        public DownloaderForm(string downloadURL, string savePath)
         {
-            Show();
-            Focus();
-            bool complete = false;
+            InitializeComponent();
+            _downloadURL = downloadURL;
+            _savePath = savePath;
+        }
 
-            EventHandler<float> progressHandler = (sender, progress) => {
-                progressBar1.Value = (int)progress;
-                if (((int)progress) == 100) { complete = true; }
-            };
+        protected override async void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
 
-            try {
-                MainConsole.HandleDownload(downloadURL, savePath, progressHandler);
-            } catch { complete = true; }
+            var progress = new Progress<float>(value =>
+                progressBar1.Value = Math.Min((int)value, 100));
 
-            // TODO: causes high CPU usage!
-            while (!complete) {
-                Application.DoEvents();
+            try
+            {
+                await Task.Run(() => MainConsole.HandleDownload(
+                    _downloadURL,
+                    _savePath,
+                    (s, value) => ((IProgress<float>)progress).Report(value)));
             }
-
-            Close();
+            catch (Exception ex)
+            {
+                Error = ex;
+            }
+            finally
+            {
+                Close();
+            }
         }
     }
 }

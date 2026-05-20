@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 - Crash if GPU has a letter in its device ID (such as RTX 2070 SUPER)
+- Quiet-mode download progress bar causing CPU spike
 
 ## [1.24.2] - 2026-04-02
 ### Fixed

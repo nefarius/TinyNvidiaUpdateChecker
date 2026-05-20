@@ -625,21 +625,24 @@ namespace TinyNvidiaUpdateChecker
                         return;
                     }
 
-                    if (File.Exists(savePath + driverFileName) && !DoesDriverFileSizeMatch(savePath + driverFileName, metadata.fileSize)) {
-                        File.Delete(savePath + driverFileName);
+                    string finalPath = savePath + driverFileName;
+
+                    if (File.Exists(finalPath) && !DoesDriverFileSizeMatch(finalPath, metadata.fileSize)) {
+                        File.Delete(finalPath);
                     }
 
                     // don't download driver if it already exists
                     WriteLine();
                     Write("Downloading the driver . . . ");
-                    if (showUI && !File.Exists(savePath + driverFileName)) {
-                        HandleDownload(metadata.downloadUrl, savePath + driverFileName).GetAwaiter().GetResult();
+                    if (showUI && !File.Exists(finalPath)) {
+                        HandleDownload(metadata.downloadUrl, finalPath).GetAwaiter().GetResult();
                     }
 
-                    // show the progress bar gui
-                    else if (!showUI && !File.Exists(savePath + driverFileName)) {
-                        using DownloaderForm dlForm = new();
-                        dlForm.DownloadFile(metadata.downloadUrl, savePath + driverFileName);
+                    // show progress bar gui if quiet
+                    else if (!showUI && !File.Exists(finalPath)) {
+                        using var dlForm = new DownloaderForm(metadata.downloadUrl, finalPath);
+                        dlForm.ShowDialog();
+                        if (dlForm.Error != null) throw dlForm.Error;
                     }
 
                 } catch (Exception ex) {
@@ -729,8 +732,9 @@ namespace TinyNvidiaUpdateChecker
                         callExit(1);
                     }
                 } else {
-                    using DownloaderForm dlForm = new();
-                    dlForm.DownloadFile(metadata.downloadUrl, FULL_PATH_DRIVER);
+                    using var dlForm = new DownloaderForm(metadata.downloadUrl, FULL_PATH_DRIVER);
+                    dlForm.ShowDialog();
+                    if (dlForm.Error != null) throw dlForm.Error;
                 }
             }
 
