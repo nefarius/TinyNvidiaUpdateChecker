@@ -1,19 +1,19 @@
-﻿using System;
+﻿using Ganss.Xss;
+using HtmlAgilityPack;
+using HttpClientProgress;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Windows.Forms;
-using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Net.NetworkInformation;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using System.Xml;
 using TinyNvidiaUpdateChecker.Handlers;
-using Newtonsoft.Json.Linq;
-using HtmlAgilityPack;
-using System.Net.Http;
-using HttpClientProgress;
-using System.Threading.Tasks;
-using Ganss.Xss;
 
 namespace TinyNvidiaUpdateChecker
 {
@@ -888,6 +888,20 @@ namespace TinyNvidiaUpdateChecker
                 Write("ERROR!");
                 WriteLine();
                 WriteLine(ex.ToString());
+                callExit(1);
+            }
+
+            // If extraction was unsuccessful
+            if (process.ExitCode != 0)
+            {
+                Write("ERROR!");
+                WriteLine();
+                WriteLine("Driver extraction was canceled. Please rerun TNUC, and disable the Minimal Install feature if the issue doesn't go away.");
+                WriteLine();
+                WriteLine("Minimal Install info:");
+                WriteLine($"Library: {library}");
+                WriteLine($"Installation Directory: { libraryFile.GetInstallationDirectory()}");
+                WriteLine($"Exit code: {process.ExitCode}");
                 callExit(1);
             }
 
