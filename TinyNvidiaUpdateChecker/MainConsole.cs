@@ -941,7 +941,7 @@ namespace TinyNvidiaUpdateChecker
 
             Directory.Delete(Path.Combine(savePath, "temp"), true);
 
-            // remove new EULA files from the installer config, or else the installer throws error codes
+            // Remove new EULA files from the installer config, or else the installer throws error codes
             // author https://github.com/cywq
             var xmlDocument = new XmlDocument();
             string setupFile = savePath + "setup.cfg";
@@ -958,6 +958,26 @@ namespace TinyNvidiaUpdateChecker
             }
 
             xmlDocument.Save(setupFile);
+
+            // Disable telemetry and installer ads
+            var presentationsXml = new XmlDocument();
+            string presentationsFile = Path.Combine(savePath, "NVI2", "presentations.cfg");
+            string[] urlsToEmpty = { "ProgressPresentationUrl", "ProgressPresentationSelectedPackageUrl" };
+
+            if (File.Exists(presentationsFile)) {
+                presentationsXml.Load(presentationsFile);
+
+                foreach (var urlName in urlsToEmpty) {
+                    var urlNode = (XmlElement)presentationsXml.DocumentElement.SelectSingleNode($"/presentations/properties/string[@name=\"{urlName}\"]");
+
+                    if (urlNode != null) {
+                        urlNode.SetAttribute("value", "");
+                    }
+                }
+
+                presentationsXml.Save(presentationsFile);
+            }
+
             Write("OK!");
             WriteLine();
         }

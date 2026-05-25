@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Added
+- Disable installer telemetry and installer ads
 - Cancel TNUC from continuing when driver extraction failed
 
 ## [1.24.3] - 2026-05-20
